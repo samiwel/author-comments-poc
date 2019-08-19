@@ -40,11 +40,63 @@ const Container = styled.div`
 `;
 
 const Sidebar = styled.div`
-  width: calc((100vw / 12) * 2);
+  display: flex;
+  flex-direction: column;
+  width: calc((100vw / 12) * 3);
+  height: 100vh;
+  /* background: lightgray; */
+
+  @media (max-width: 768px) {
+    width: 100vw;
+  }
+
+  @media (max-width: 1024px) {
+    width: calc((100vw / 12) * 4);
+  }
 `;
 
 const Timestamp = styled(ReactTimeAgo)`
   color: grey;
+`;
+
+const CommentBox = styled.input`
+  flex: 1 0 auto;
+  padding: 0.5em 0.5em;
+  font-size: 0.9em;
+`;
+
+const Avatar = styled.img`
+  border-radius: 0.2em;
+  margin-right: 0.5em;
+  flex: 0 0 auto;
+`;
+
+const Comment = styled.div`
+  margin: 0.2em 1em;
+`;
+
+const Form = styled.form`
+  display: flex;
+  flex-direction: row;
+`;
+
+const Hbox = styled.div`
+  display: flex;
+  flex-direction: row;
+`;
+
+const Name = styled.div`
+  font-weight: bold;
+  margin-right: 0.5em;
+`;
+
+const VBox = styled.div`
+  display: flex;
+  flex-direction: column;
+`;
+
+const CommentText = styled.div`
+  padding: 0.5em 0;
 `;
 
 export default () => {
@@ -73,27 +125,28 @@ export default () => {
 
         {comments.length > 0 &&
           comments.map(comment => (
-            <div key={comment.id}>
-              <header>
-                <div>
-                  <img src={comment.user.avatar} width={32} />
-                  {comment.user.displayName}
-                </div>
-                <Timestamp date={comment.timestamp} />
-              </header>
-
-              <p>{comment.text}</p>
-            </div>
+            <Comment key={comment.id}>
+              <Hbox>
+                <Avatar src={comment.user.avatar} width={42} height={42} />
+                <VBox>
+                  <Hbox>
+                    <Name>{comment.user.displayName}</Name>
+                    <Timestamp date={comment.timestamp} />
+                  </Hbox>
+                  <CommentText>{comment.text}</CommentText>
+                </VBox>
+              </Hbox>
+            </Comment>
           ))}
 
-        <form onSubmit={submitComment}>
-          <input
+        <Form onSubmit={submitComment}>
+          <CommentBox
             type="text"
             placeholder="Add a comment"
             value={comment}
             onChange={e => setComment(e.target.value)}
           />
-        </form>
+        </Form>
       </Sidebar>
     </Container>
   );
