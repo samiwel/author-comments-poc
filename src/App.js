@@ -151,15 +151,28 @@ const Comment = ({ comment, level }) => {
 };
 
 const CommentList = ({ comments, level }) => {
-  if (comments.length === 0) {
+  const [commentList, setCommentList] = useState(comments);
+
+  function submitComment(comment) {
+    setCommentList([...commentList, createComment(comment)]);
+  }
+
+  if (commentList.length === 0) {
     return <div>There are no comments to display</div>;
   }
 
   return (
     <>
-      {comments.map(comment => {
+      {commentList.map(comment => {
         return <Comment key={comment.id} comment={comment} level={level} />;
       })}
+      {level === 0 && (
+        <InlineCommentForm
+          onSubmit={submitComment}
+          placeholder="Add a comment"
+          autoFocus
+        />
+      )}
     </>
   );
 };
@@ -188,24 +201,13 @@ const InlineCommentForm = ({ onSubmit, placeholder, ...rest }) => {
 };
 
 export default () => {
-  const [comments, setComments] = useState(initialComments);
-
-  function submitComment(comment) {
-    setComments([...comments, createComment(comment)]);
-  }
-
   return (
     <Container>
       <Sidebar>
         <p>
           This is a proof of concept for how commenting might work on EQ Author
         </p>
-        <CommentList comments={comments} level={0} />
-        <InlineCommentForm
-          onSubmit={submitComment}
-          placeholder="Add a comment"
-          autoFocus
-        />
+        <CommentList comments={initialComments} level={0} />
       </Sidebar>
     </Container>
   );
