@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState } from "react";
 import uuid from "uuid";
 import styled from "styled-components";
 import JavascriptTimeAgo from "javascript-time-ago";
@@ -108,6 +108,10 @@ const CommentText = styled.div`
 const Comment = ({ comment, level }) => {
   const [showReplyField, setShowReplyField] = useState(false);
 
+  function replyButtonClicked() {
+    setShowReplyField(!showReplyField);
+  }
+
   return (
     <CommentWrapper level={level}>
       <Hbox>
@@ -118,7 +122,8 @@ const Comment = ({ comment, level }) => {
             <Timestamp date={comment.timestamp} />
             <button
               type="button"
-              onClick={() => setShowReplyField(!showReplyField)}
+              onClick={replyButtonClicked}
+              disabled={showReplyField}
             >
               Reply
             </button>
@@ -134,19 +139,17 @@ const Comment = ({ comment, level }) => {
         />
       )}
       {showReplyField && (
-        <Form>
-          <CommentBox
-            type="text"
-            placeholder={`Reply to ${comment.user.displayName.split(" ")[0]}`}
-            onBlur={() => setShowReplyField(false)}
-          />
-        </Form>
+        <InlineCommentForm
+          placeholder={`Reply to ${comment.user.displayName.split(" ")[0]}`}
+          onBlur={() => setShowReplyField(false)}
+          autoFocus
+        />
       )}
     </CommentWrapper>
   );
 };
 
-const CommentList = ({ comments, level, parent, replyTo }) => {
+const CommentList = ({ comments, level }) => {
   if (comments.length === 0) {
     return <div>There are no comments to display</div>;
   }
@@ -160,33 +163,34 @@ const CommentList = ({ comments, level, parent, replyTo }) => {
   );
 };
 
+const InlineCommentForm = ({ onSubmit, placeholder, ...rest }) => {
+  const [comment, setComment] = useState();
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    onSubmit(comment);
+  }
+
+  return (
+    <Form onSubmit={handleSubmit}>
+      <CommentBox
+        type="text"
+        placeholder={placeholder}
+        value={comment}
+        onChange={e => setComment(e.target.value)}
+        {...rest}
+      />
+    </Form>
+  );
+};
+
 export default () => {
   const [comments, setComments] = useState(initialComments);
-  const [comment, setComment] = useState("");
-  const [visibleReplyTo, setVisibleReplyTo] = useState(null);
 
-  function submitComment(e) {
-    e.preventDefault();
-    e.stopPropagation();
+  function submitComment(comment) {
     setComments([...comments, createComment(comment)]);
-    setComment("");
   }
-
-  function replyTo(e, parent, reply) {
-    e.preventDefault();
-    e.stopPropagation();
-    setComments(
-      comments.map(c => {
-        if (c.id === parent.id) {
-          c.replies = [...c.replies, createComment(reply)];
-        }
-      })
-    );
-  }
-
-  useEffect(() => {
-    console.log(comments);
-  }, [comments]);
 
   return (
     <Container>
@@ -194,17 +198,11 @@ export default () => {
         <p>
           This is a proof of concept for how commenting might work on EQ Author
         </p>
-
-        <CommentList comments={comments} level={0} replyTo={replyTo} />
-
-        <Form onSubmit={submitComment}>
-          <CommentBox
-            type="text"
-            placeholder="Add a comment"
-            value={comment}
-            onChange={e => setComment(e.target.value)}
-          />
-        </Form>
+        <CommentList comments={comments} level={0} />
+        <InlineCommentForm
+          onSubmit={submitComment}
+          placeholder="Add a comment"
+        />
       </Sidebar>
     </Container>
   );
