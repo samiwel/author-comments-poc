@@ -24,7 +24,8 @@ const initialComments = [
         user: {
           displayName: "Samiwel Thomas",
           avatar: "https://avatars2.githubusercontent.com/u/4097796?s=460&v=4"
-        }
+        },
+        replies: []
       }
     ]
   }
@@ -34,7 +35,8 @@ const createComment = text => ({
   id: uuid.v4(),
   text,
   timestamp: Date.now(),
-  user: createUser()
+  user: createUser(),
+  replies: []
 });
 
 const createUser = options => ({
@@ -132,15 +134,14 @@ const Comment = ({ comment, level }) => {
         </VBox>
       </Hbox>
       {comment.replies && comment.replies.length > 0 && (
-        <CommentList
-          comments={comment.replies}
-          level={level + 1}
-          parent={comment}
-        />
+        <CommentList comments={comment.replies} level={level + 1} />
       )}
       {showReplyField && (
         <InlineCommentForm
           placeholder={`Reply to ${comment.user.displayName.split(" ")[0]}`}
+          onSubmit={reply => {
+            comment.replies.push(createComment(reply));
+          }}
           onBlur={() => setShowReplyField(false)}
           autoFocus
         />
@@ -170,6 +171,7 @@ const InlineCommentForm = ({ onSubmit, placeholder, ...rest }) => {
     e.preventDefault();
     e.stopPropagation();
     onSubmit(comment);
+    setComment("");
   }
 
   return (
@@ -202,6 +204,7 @@ export default () => {
         <InlineCommentForm
           onSubmit={submitComment}
           placeholder="Add a comment"
+          autoFocus
         />
       </Sidebar>
     </Container>
