@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import uuid from "uuid";
 import styled from "styled-components";
 import JavascriptTimeAgo from "javascript-time-ago";
 import en from "javascript-time-ago/locale/en";
 import ReactTimeAgo from "react-time-ago";
 import faker from "faker";
-
 JavascriptTimeAgo.locale(en);
 
 const initialComments = [
@@ -16,7 +15,18 @@ const initialComments = [
     user: {
       displayName: "Samiwel Thomas",
       avatar: "https://avatars2.githubusercontent.com/u/4097796?s=460&v=4"
-    }
+    },
+    replies: [
+      {
+        id: "a936cbe8-6bbd-4591-98e3-6bb3c727baacd",
+        text: "This is a reply",
+        timestamp: 1565969911147,
+        user: {
+          displayName: "Samiwel Thomas",
+          avatar: "https://avatars2.githubusercontent.com/u/4097796?s=460&v=4"
+        }
+      }
+    ]
   }
 ];
 
@@ -34,25 +44,17 @@ const createUser = options => ({
 });
 
 const Container = styled.div`
+  padding: 1em;
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
 `;
 
 const Sidebar = styled.div`
   display: flex;
   flex-direction: column;
-  width: calc((100vw / 12) * 3);
+  width: 100%;
   height: 100vh;
   /* background: lightgray; */
-
-  @media (max-width: 768px) {
-    width: 100vw;
-  }
-
-  @media (max-width: 1024px) {
-    width: calc((100vw / 12) * 4);
-  }
 `;
 
 const Timestamp = styled(ReactTimeAgo)`
@@ -71,8 +73,12 @@ const Avatar = styled.img`
   flex: 0 0 auto;
 `;
 
-const Comment = styled.div`
+const CommentWrapper = styled.div`
   margin: 0.2em 1em;
+
+  ${props => console.log(props.level)}
+  ${props =>
+    props.level > 0 && `margin-left: calc(0.2em + (${props.level} * 1em));`}
 `;
 
 const Form = styled.form`
@@ -99,15 +105,83 @@ const CommentText = styled.div`
   padding: 0.5em 0;
 `;
 
+const Comment = ({ comment, level }) => {
+  const [showReplyField, setShowReplyField] = useState(false);
+
+  return (
+    <CommentWrapper level={level}>
+      <Hbox>
+        <Avatar src={comment.user.avatar} width={42} height={42} />
+        <VBox>
+          <Hbox>
+            <Name>{comment.user.displayName}</Name>
+            <Timestamp date={comment.timestamp} />
+            <button
+              type="button"
+              onClick={() => setShowReplyField(!showReplyField)}
+            >
+              Reply
+            </button>
+          </Hbox>
+          <CommentText>{comment.text}</CommentText>
+        </VBox>
+      </Hbox>
+      {comment.replies && comment.replies.length > 0 && (
+        <CommentList
+          comments={comment.replies}
+          level={level + 1}
+          parent={comment}
+        />
+      )}
+      {showReplyField && (
+        <Form>
+          <CommentBox
+            type="text"
+            placeholder={`Reply to ${comment.user.displayName.split(" ")[0]}`}
+            onBlur={() => setShowReplyField(false)}
+          />
+        </Form>
+      )}
+    </CommentWrapper>
+  );
+};
+
+const CommentList = ({ comments, level, parent, replyTo }) => {
+  if (comments.length === 0) {
+    return <div>There are no comments to display</div>;
+  }
+
+  return (
+    <>
+      {comments.map(comment => {
+        return <Comment key={comment.id} comment={comment} level={level} />;
+      })}
+    </>
+  );
+};
+
 export default () => {
   const [comments, setComments] = useState(initialComments);
   const [comment, setComment] = useState("");
+  const [visibleReplyTo, setVisibleReplyTo] = useState(null);
 
   function submitComment(e) {
     e.preventDefault();
     e.stopPropagation();
     setComments([...comments, createComment(comment)]);
     setComment("");
+  }
+
+  function replyTo(e, parent, reply) {
+    e.preventDefault();
+    e.stopPropagation();
+    setComments(
+      comments.map(c => {
+        if (c.id === parent.id) {
+          c.replies = [...c.replies, createComment(reply)];
+        }
+      })
+    );
   }
 
   useEffect(() => {
@@ -121,23 +195,7 @@ export default () => {
           This is a proof of concept for how commenting might work on EQ Author
         </p>
 
-        {comments.length === 0 && <div>There are no comments to display</div>}
-
-        {comments.length > 0 &&
-          comments.map(comment => (
-            <Comment key={comment.id}>
-              <Hbox>
-                <Avatar src={comment.user.avatar} width={42} height={42} />
-                <VBox>
-                  <Hbox>
-                    <Name>{comment.user.displayName}</Name>
-                    <Timestamp date={comment.timestamp} />
-                  </Hbox>
-                  <CommentText>{comment.text}</CommentText>
-                </VBox>
-              </Hbox>
-            </Comment>
-          ))}
+        <CommentList comments={comments} level={0} replyTo={replyTo} />
 
         <Form onSubmit={submitComment}>
           <CommentBox
