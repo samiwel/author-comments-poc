@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useReducer, useContext } from "react";
 import uuid from "uuid";
 import styled from "styled-components";
 import JavascriptTimeAgo from "javascript-time-ago";
@@ -30,6 +30,43 @@ const initialComments = [
     ]
   }
 ];
+
+const ADD_COMMENT = "ADD_COMMENT";
+const REPLY_TO_COMMENT = "REPLY_TO_COMMENT";
+
+function addReplyDeep(list, idToFind, replyToAdd) {
+  return list.map(c => {
+    if (c.id === idToFind) {
+      return {
+        ...c,
+        replies: [...c.replies, replyToAdd]
+      };
+    } else {
+      return c;
+    }
+
+    if (c.replies.length > 0) {
+      return addReplyDeep(c.replies, idToFind, replyToAdd);
+    }
+  });
+}
+
+function commentReducer(state, action) {
+  switch (action.type) {
+    case ADD_COMMENT:
+      return [...state, createComment(action.payload.comment)];
+    case REPLY_TO_COMMENT:
+      return [
+        ...addReplyDeep(
+          state,
+          action.payload.commentId,
+          createComment(action.payload.reply)
+        )
+      ];
+    default:
+      throw new Error();
+  }
+}
 
 const createComment = text => ({
   id: uuid.v4(),
@@ -107,8 +144,25 @@ const CommentText = styled.div`
   padding: 0.5em 0;
 `;
 
+const ReplyButton = styled.button`
+  margin-left: 0.5em;
+`;
+
+const ReducerContext = React.createContext();
+
 const Comment = ({ comment, level }) => {
   const [showReplyField, setShowReplyField] = useState(false);
+  const { dispatch } = useContext(ReducerContext);
+
+  function replyToComment(commentId, reply) {
+    dispatch({
+      type: REPLY_TO_COMMENT,
+      payload: {
+        commentId,
+        reply
+      }
+    });
+  }
 
   function replyButtonClicked() {
     setShowReplyField(!showReplyField);
@@ -122,13 +176,13 @@ const Comment = ({ comment, level }) => {
           <Hbox>
             <Name>{comment.user.displayName}</Name>
             <Timestamp date={comment.timestamp} />
-            <button
+            <ReplyButton
               type="button"
               onClick={replyButtonClicked}
               disabled={showReplyField}
             >
               Reply
-            </button>
+            </ReplyButton>
           </Hbox>
           <CommentText>{comment.text}</CommentText>
         </VBox>
@@ -139,9 +193,7 @@ const Comment = ({ comment, level }) => {
       {showReplyField && (
         <InlineCommentForm
           placeholder={`Reply to ${comment.user.displayName.split(" ")[0]}`}
-          onSubmit={reply => {
-            comment.replies.push(createComment(reply));
-          }}
+          onSubmit={reply => replyToComment(comment.id, reply)}
           onBlur={() => setShowReplyField(false)}
           autoFocus
         />
@@ -151,19 +203,24 @@ const Comment = ({ comment, level }) => {
 };
 
 const CommentList = ({ comments, level }) => {
-  const [commentList, setCommentList] = useState(comments);
+  const { dispatch } = useContext(ReducerContext);
 
   function submitComment(comment) {
-    setCommentList([...commentList, createComment(comment)]);
+    dispatch({
+      type: ADD_COMMENT,
+      payload: {
+        comment
+      }
+    });
   }
 
-  if (commentList.length === 0) {
+  if (comments.length === 0) {
     return <div>There are no comments to display</div>;
   }
 
   return (
     <>
-      {commentList.map(comment => {
+      {comments.map(comment => {
         return <Comment key={comment.id} comment={comment} level={level} />;
       })}
       {level === 0 && (
@@ -201,14 +258,23 @@ const InlineCommentForm = ({ onSubmit, placeholder, ...rest }) => {
 };
 
 export default () => {
+  const [state, dispatch] = useReducer(commentReducer, initialComments);
+
   return (
-    <Container>
-      <Sidebar>
-        <p>
-          This is a proof of concept for how commenting might work on EQ Author
-        </p>
-        <CommentList comments={initialComments} level={0} />
-      </Sidebar>
-    </Container>
+    <ReducerContext.Provider
+      value={{
+        dispatch
+      }}
+    >
+      <Container>
+        <Sidebar>
+          <p>
+            This is a proof of concept for how commenting might work on EQ
+            Author
+          </p>
+          <CommentList comments={state} level={0} />
+        </Sidebar>
+      </Container>
+    </ReducerContext.Provider>
   );
 };
