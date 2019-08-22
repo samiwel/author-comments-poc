@@ -7,29 +7,7 @@ import ReactTimeAgo from "react-time-ago";
 import faker from "faker";
 JavascriptTimeAgo.locale(en);
 
-const initialComments = [
-  {
-    id: "a936cbe8-6bbd-4591-98e3-6bb3c727baac",
-    text: "Hey",
-    timestamp: 1565969911147,
-    user: {
-      displayName: "Samiwel Thomas",
-      avatar: "https://avatars2.githubusercontent.com/u/4097796?s=460&v=4"
-    },
-    replies: [
-      {
-        id: "a936cbe8-6bbd-4591-98e3-6bb3c727baacd",
-        text: "This is a reply",
-        timestamp: 1565969911147,
-        user: {
-          displayName: "Samiwel Thomas",
-          avatar: "https://avatars2.githubusercontent.com/u/4097796?s=460&v=4"
-        },
-        replies: []
-      }
-    ]
-  }
-];
+const initialComments = [];
 
 const ADD_COMMENT = "ADD_COMMENT";
 const REPLY_TO_COMMENT = "REPLY_TO_COMMENT";
@@ -216,7 +194,18 @@ const CommentList = ({ comments, level }) => {
   }
 
   if (comments.length === 0) {
-    return <div>There are no comments to display</div>;
+    return (
+      <>
+        <div>There are no comments to display</div>
+        {level === 0 && (
+          <InlineCommentForm
+            onSubmit={submitComment}
+            placeholder="Add a comment"
+            autoFocus
+          />
+        )}
+      </>
+    );
   }
 
   return (
