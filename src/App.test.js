@@ -1,9 +1,53 @@
 import React from "react";
-import ReactDOM from "react-dom";
-import App from "./App";
+import { addReplyDeep } from "./App";
 
-it("renders without crashing", () => {
-  const div = document.createElement("div");
-  ReactDOM.render(<App />, div);
-  ReactDOM.unmountComponentAtNode(div);
+describe("replying to a comment", () => {
+  let comments;
+  let reply;
+
+  let commentNoReplies;
+  let commentWithReplies;
+
+  beforeEach(() => {
+    commentNoReplies = {
+      id: "1",
+      replies: []
+    };
+
+    commentWithReplies = {
+      id: "1",
+      replies: [
+        {
+          id: "2",
+          replies: [
+            {
+              id: "3",
+              replies: []
+            }
+          ]
+        }
+      ]
+    };
+
+    comments = [commentNoReplies];
+
+    reply = {
+      id: "reply",
+      replies: []
+    };
+  });
+
+  it("should reply to top level", () => {
+    expect(addReplyDeep(comments, "1", reply)).toEqual([
+      {
+        id: "1",
+        replies: [reply]
+      }
+    ]);
+  });
+
+  it("should reply to a reply", () => {
+    const result = addReplyDeep([commentWithReplies], "2", reply);
+    expect(result[0].replies[0].replies).toHaveLength(2);
+  });
 });

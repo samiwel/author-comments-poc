@@ -34,19 +34,20 @@ const initialComments = [
 const ADD_COMMENT = "ADD_COMMENT";
 const REPLY_TO_COMMENT = "REPLY_TO_COMMENT";
 
-function addReplyDeep(list, idToFind, replyToAdd) {
+export function addReplyDeep(list, idToFind, replyToAdd) {
   return list.map(c => {
     if (c.id === idToFind) {
       return {
         ...c,
         replies: [...c.replies, replyToAdd]
       };
+    } else if (c.replies.length > 0) {
+      return {
+        ...c,
+        replies: addReplyDeep(c.replies, idToFind, replyToAdd)
+      };
     } else {
       return c;
-    }
-
-    if (c.replies.length > 0) {
-      return addReplyDeep(c.replies, idToFind, replyToAdd);
     }
   });
 }
